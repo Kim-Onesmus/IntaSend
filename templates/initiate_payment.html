@@ -16,11 +16,11 @@
         <!-- Payment Form -->
         <div class="card shadow-sm">
             <div class="card-body">
-                <form method="POST" action="">
+                <form id="paymentForm" action="">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="amount" class="form-label">Email</label>
-                        <input type="email" name="email" id="amount" value="Kimonesmuske@gmail.com" class="form-control" placeholder="Enter amount" required>
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" name="email" id="email" value="Kimonesmuske@gmail.com" class="form-control" placeholder="Enter email" required>
                     </div>
                     <div class="mb-3">
                         <label for="amount" class="form-label">Payment Amount</label>
@@ -28,29 +28,26 @@
                     </div>
                     <div class="mb-3">
                         <label for="phone_number" class="form-label">Phone Number</label>
-                        <input type="text" name="phone_number" value="254792613079" id="phone_number" class="form-control" placeholder="Enter phone number" required>
+                        <input type="text" name="phone_number" id="phone_number" value="254792613079" class="form-control" placeholder="Enter phone number" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Initiate Payment</button>
+                    <button id="submitPayment" type="button" class="btn btn-primary w-100">Initiate Payment</button>
                 </form>
             </div>
         </div>
+    </div>
 
-        <!-- Payment Success Message -->
-        {% if success %}
-        <div class="alert alert-success mt-4">
-            <h5 class="alert-heading">Payment Successful!</h5>
-            <p>Your payment of <strong>{{ success.amount }}</strong> has been processed successfully. Thank you for your transaction!</p>
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Initiating Payment</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage">Please wait while we process your payment...</p>
+                </div>
+            </div>
         </div>
-        {% endif %}
-
-        <!-- Payment Error Message -->
-        {% if error %}
-        <div class="alert alert-danger mt-4">
-            <h5 class="alert-heading">Payment Failed!</h5>
-            <p>We encountered an error while processing your payment: <strong>{{ error.message }}</strong>.</p>
-            <p>Please try again or contact support if the issue persists.</p>
-        </div>
-        {% endif %}
     </div>
 
     <footer class="text-center mt-5 text-muted">
@@ -58,5 +55,106 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('submitPayment').addEventListener('click', async function (e) {
+        e.preventDefault();
+
+        const submitButton = document.getElementById('submitPayment');
+        const phone_number = document.getElementById('phone_number').value.trim();
+        const amount = document.getElementById('amount').value.trim();
+        const email = document.getElementById('email').value.trim();
+
+        const modalMessage = document.getElementById('modalMessage');
+        const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+
+        if (!phone_number || !amount) {
+            alert('Please enter a valid phone number and amount.');
+            return;
+        }
+
+        submitButton.innerHTML = 'Initiating Payment... <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        submitButton.disabled = true;
+        
+
+        const data = { phone_number, amount, email };
+
+        try {
+            const response = await fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify(data),
+            });
+
+            const responseData = await response.json();
+            console.log('Response data', responseData);
+            console.log('Response status', responseData.status);
+
+
+            if (responseData.status === 200) {
+                paymentModal.show();
+                modalMessage.textContent = "An STK push has been sent your mobile, please complete the payment and wait we validate it";
+
+                const invoiceId = responseData.invoice_id;
+                console.log('Invoice ID', invoiceId)
+
+
+                const checkPaymentStatus = async () => {
+                let retries = 20;
+                let successful = false;
+                while (retries > 0) {
+                    try {
+                        const payResponse = await fetch(`/check_payment_status?invoice_id=${invoiceId}`);
+                        const payResponseData = await payResponse.json();
+                        console.log('Pay Response', payResponseData);
+                        
+                        if (payResponseData.status === 202) {
+                            console.log('Payment is pending. Retrying...');
+                        } else if (payResponseData.status === 200) {
+                            modalMessage.textContent = payResponseData.message;
+                            // window.location.href = `/payment-success?invoice_id=${invoiceId}`;
+                            successful = true;
+                            break;
+                        } else {
+                            modalMessage.textContent = payResponseData.message;
+                            successful = true;
+                            // window.location.href = `/payment-success?invoice_id=${invoiceId}`;
+                            break;
+                        }
+                    } catch (error) {
+                        modalMessage.textContent = 'An error occured while validating payment';
+                    }
+                    retries--;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                if (!successful) {
+                    modalMessage.textContent = 'An error occured while initiating STK push';
+                }
+            };
+
+            checkPaymentStatus();
+
+            } else {
+                modalMessage.textContent = 'An error occured while initiating STK push';
+            }
+        } catch (error) {
+            modalMessage.textContent = "Internal server error!! An error occurred!!";
+        } finally {
+            resetSubmitButton(submitButton);
+        }
+    });
+
+   
+    function resetSubmitButton(button) {
+        button.innerHTML = 'Submit';
+        button.disabled = false;
+    }
+});
+
+</script>
 </body>
 </html>

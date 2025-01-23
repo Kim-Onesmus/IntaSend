@@ -4,6 +4,7 @@ from django.conf import settings
 from django.http import JsonResponse
 import requests
 import time
+import json
 
 
 def get_intasend_service():
@@ -17,9 +18,11 @@ def get_intasend_service():
 
 def initiate_payment(request):
     if request.method == 'POST':
-        phone_number = request.POST.get('phone_number')
-        email = request.POST.get('email')
-        amount = request.POST.get('amount')        
+        data = json.loads(request.body.decode('utf-8'))
+        phone_number = data.get('phone_number')
+        amount = data.get('amount')
+        email = data.get('email')
+
 
         url = f"{settings.BASE_URL}/api/v1/payment/mpesa-stk-push/"
 
@@ -35,51 +38,58 @@ def initiate_payment(request):
         }
 
         response = requests.post(url, json=payload, headers=headers)
-        print('Response', response.status_code)
+        print('Response', response.text)
         if response.status_code == 200:
             response_details = response.json()
             invoice_id = response_details.get('invoice', {}).get('invoice_id')
             print('Invoice Id', invoice_id)
-            check_payment_status(request, invoice_id)
+            return JsonResponse({
+                'status':200,
+                'invoice_id': invoice_id,
+            })
         else:
-            error_message = f"Failed to send STK push. Status:"
-            return render(request, 'initiate_payment.html', {'error': error_message})
+            return JsonResponse({
+                'status':500,
+            })
     return render(request, 'initiate_payment.html')
 
 
 
-def check_payment_status(request, invoice_id):
+def check_payment_status(request):
     url = f"{settings.BASE_URL}/api/v1/payment/status/"
+    invoice_id = request.GET.get('invoice_id')
     print('Invoice Id', invoice_id)
+    if not invoice_id:
+        return JsonResponse({
+            'status': 400,
+            'message': 'Invoice ID is required'
+        })
     payload = { 
         "invoice_id": invoice_id 
     }
 
-    # payload = { 
-    #     "invoice_id": "YVO9VZQ" 
-    # }
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
-        "Authorization": "Bearer ISSecretKey_test_96dd8981-fa1f-4ccd-841e-8aa9932ebebe"
+        "Authorization": f"Bearer {settings.INTASEND_API_TOKEN}"
     }
 
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
         response_data = response.json()
         state = response_data.get('invoice', {}).get('state')
-        try:
-            timeout = 30
-            interval = 2
-            elapsed_time = 0
-
-            while elapsed_time < timeout:
-                if state == "COMPLETE":
-                    return redirect('success')
-                time.sleep(interval)
-                elapsed_time += interval
-            return redirect('failed')
-        except:
-            return redirect('failed')
-
-    print(response.text)
+        if state != "COMPLETE":
+            return JsonResponse({
+                'status': 202,
+                'message': 'Validating payment, please wait'
+            })
+        elif state == 'COMPLETE':
+            return JsonResponse({
+                'status': 200,
+                'message': 'Payment successful, redirecting....'
+            })
+        else:
+            return JsonResponse({
+                'status': 201,
+                'message': 'An error occured while validatin payment'
+            })
