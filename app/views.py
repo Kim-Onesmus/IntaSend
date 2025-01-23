@@ -51,7 +51,9 @@ def initiate_payment(request):
 def check_payment_status(request):
     url = "https://sandbox.intasend.com/api/v1/payment/status/"
 
-    payload = { "invoice_id": "YVO9VZQ" }
+    payload = { 
+        "invoice_id": "YVO9VZQ" 
+    }
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
