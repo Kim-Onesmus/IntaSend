@@ -124,3 +124,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+INTASEND_API_TOKEN = 'your_api_token_here'
+INTASEND_PUBLISHABLE_KEY = 'your_publishable_key_here'
+INTASEND_TEST_MODE = True
