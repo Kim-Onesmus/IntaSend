@@ -127,6 +127,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 BASE_URL = 'https://sandbox.intasend.com'
-INTASEND_API_TOKEN = 'ISSecretKey_test_96dd8981-fa1f-4ccd-841e-8aa9932ebebe'
-INTASEND_PUBLISHABLE_KEY = 'ISPubKey_test_3ec03f4b-2152-42f0-a0d2-e7371dd9cc15'
+INTASEND_API_TOKEN = 'ISSecretKey_test_9d7637f8-4283-47f8-9328-f3d4d151b89f'
+INTASEND_PUBLISHABLE_KEY = 'ISPubKey_test_a01a7f43-23c6-4842-b1c1-46e44577d0b7'
 INTASEND_TEST_MODE = True

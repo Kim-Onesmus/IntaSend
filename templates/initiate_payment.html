@@ -109,7 +109,7 @@
                     try {
                         const payResponse = await fetch(`/check_payment_status?invoice_id=${invoiceId}`);
                         const payResponseData = await payResponse.json();
-                        console.log('Pay Response', payResponseData);
+                        // console.log('Pay Response', payResponseData);
                         
                         if (payResponseData.status === 202) {
                             console.log('Payment is pending. Retrying...');
