@@ -1,0 +1,12 @@
+<!-- templates/initiate_payment.html -->
+
+<form method="post" action="">
+    {% csrf_token %}
+    <label for="phone_number">Phone Number:</label>
+    <input type="text" id="phone_number" value="254792613079" name="phone_number" required>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" value="kimonesmuske@gmail.com" required>
+    <label for="amount">Amount:</label>
+    <input type="number" id="amount" value="1" name="amount" required>
+    <button type="submit">Pay Now</button>
+</form>

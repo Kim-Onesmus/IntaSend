@@ -25,13 +25,12 @@ def initiate_payment(request):
             amount=amount,
             narrative="Payment for Services"
         )
-
-        return JsonResponse(response)
+        print('Payment initiation response', response)
+        # return JsonResponse(response)
     return render(request, 'initiate_payment.html')
 
-# views.py
 
-def check_payment_status(request, invoice_id):
+def check_payment_status(request):
     service = get_intasend_service()
-    status_response = service.collect.status(invoice_id=invoice_id)
+    status_response = service.collect.status(invoice_id='RKML2NY')
     return JsonResponse(status_response)
